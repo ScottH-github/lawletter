@@ -353,8 +353,8 @@ export const LetterPdfDocument = ({ senderName, senderAddress, receiverName, rec
                                        <Text style={styles.footerText}>　　年　　月　　日證明正副本內容完全相同</Text>
                                     </View>
                                     
-                                    <View style={{ width: 30,paddingBottom:0}} >
-                                    <View style={{borderColor:'#666666', borderWidth: 0.5, width: 30,height:30,borderRadius: 15,borderStyle:'dotted', justifyContent: 'center', alignItems: 'center'}} >
+                                    <View style={{ width: 40,marginTop:-15}} >
+                                    <View style={{borderColor:'#666666', borderWidth: 0.5, width: 40,height:40,borderRadius: 20,borderStyle:'dotted', justifyContent: 'center', alignItems: 'center'}} >
                                       <Text style={[styles.footerText, {color:'#666666'}]}>郵戳</Text>
                                     </View>
                                     </View>
