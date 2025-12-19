@@ -121,13 +121,23 @@ The user has requested the following tone: "${tone}".
         languageModel = xai(cleanModelName);
 
     } else if (cleanModelName.startsWith('deepseek')) {
-        // DeepSeek
-        const { createOpenAI } = require('@ai-sdk/openai');
-        const deepseek = createOpenAI({
+        // DeepSeek - use official 'openai' SDK directly
+        // Vercel AI SDK has issues with DeepSeek endpoints (force-redirects to /responses), so we bypass it.
+        const OpenAI = require('openai');
+        const client = new OpenAI({
             baseURL: 'https://api.deepseek.com',
             apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
         });
-        languageModel = deepseek(cleanModelName);
+        
+        const completion = await client.chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Sender: ${senderName}\nReceiver: ${receiverName}\nCase Details: ${caseDetails}\n\nAdditional Instructions from User: ${additionalInstructions || "None"}` }
+            ],
+            model: cleanModelName,
+        });
+
+        return Response.json({ text: completion.choices[0].message.content });
 
     } else if (cleanModelName.startsWith('qwen')) {
         // Alibaba Cloud (Qwen) - using DashScope compatible endpoint
@@ -163,8 +173,17 @@ The user has requested the following tone: "${tone}".
 
     return Response.json({ text });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('AI Generation Error:', error);
-    return Response.json({ error: 'Failed to generate letter.' }, { status: 500 });
+    
+    // Attempt to extract more specific error message from provider
+    const errorMessage = error.message || 'Failed to generate letter.';
+    // Check for common error types (e.g. 402 Payment Required for DeepSeek/OpenAI)
+    const status = error.statusCode || error.status || 500;
+    
+    return Response.json({ 
+        error: errorMessage,
+        details: JSON.stringify(error, Object.getOwnPropertyNames(error))
+    }, { status });
   }
 }

@@ -39,18 +39,18 @@ export function InputForm() {
     } = useLetterStore()
     
     const [isDetecting, setIsDetecting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         // No auto-detect needed
     }, [])
-
-// detectModels removed as we use hardcoded lists now
-
-    // We'll use a simple fetch for now to have more control or useCompletion if we want streaming
-    // User requested "Refine" button.
     
+    // ...
+
     const handleGenerate = async () => {
         setIsGenerating(true)
+        setError(null)
+        
         // Raw Mode Bypass
         if (isRawContent) {
             // Simulate brief delay for UX
@@ -79,12 +79,18 @@ export function InputForm() {
                 })
             })
             const data = await response.json()
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate letter')
+            }
+
             if (data.text) {
                 setGeneratedLetter(data.text)
                 if (step === 2) setStep(3)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error generating letter:", error)
+            setError(error.message || "發生未知錯誤，請稍後再試。")
         } finally {
             setIsGenerating(false)
         }
@@ -217,6 +223,23 @@ export function InputForm() {
                                         直接使用原文 (不進行 AI 改寫，僅套用 PDF 格式)
                                     </Label>
                                 </div>
+
+                                {!isRawContent && (
+                                    <ModelSelectionPanel 
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        selectedModel={selectedModel}
+                                        setSelectedModel={setSelectedModel}
+                                        availableModels={availableModels}
+                                    />
+                                )}
+
+                                {error && (
+                                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                                        <div className="w-5 h-5 flex items-center justify-center rounded-full bg-red-100 shrink-0">!</div>
+                                        <span>{error}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -243,54 +266,21 @@ export function InputForm() {
                                 </Button>
                             </div>
 
-                            {/* Model Selection */}
-                             <div className="flex flex-col sm:flex-row gap-4 items-center p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
-                                    <Server className="w-4 h-4" />
-                                    <span>AI 模型:</span>
+                            {/* Model Selection (Reused) */}
+                            <ModelSelectionPanel 
+                                apiKey={apiKey}
+                                setApiKey={setApiKey}
+                                selectedModel={selectedModel}
+                                setSelectedModel={setSelectedModel}
+                                availableModels={availableModels}
+                            />
+
+                            {error && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                                    <div className="w-5 h-5 flex items-center justify-center rounded-full bg-red-100 shrink-0">!</div>
+                                    <span>{error}</span>
                                 </div>
-                                <div className="flex-1 w-full flex items-center gap-2">
-                                     <Select value={selectedModel.replace('models/', '')} onValueChange={(v) => setSelectedModel(`models/${v}`)}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="選擇模型" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="gemini-2.5-flash">Google Gemini 2.5 Flash</SelectItem>
-                                            <SelectItem value="gemini-1.5-pro">Google Gemini 1.5 Pro</SelectItem>
-                                            <SelectItem value="gpt-4o">OpenAI GPT-4o</SelectItem>
-                                            <SelectItem value="gpt-4o-mini">OpenAI GPT-4o Mini</SelectItem>
-                                            <SelectItem value="grok-beta">xAI Grok (Beta)</SelectItem>
-                                            <SelectItem value="deepseek-chat">DeepSeek V3</SelectItem>
-                                            <SelectItem value="qwen-max">Alibaba Qwen Max</SelectItem>
-                                            <SelectItem value="qwen-plus">Alibaba Qwen Plus</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            
-                            {/* API Key Input */}
-                             <div className="flex flex-col sm:flex-row gap-4 items-center p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
-                                    <Key className="w-4 h-4" />
-                                    <span>API Key:</span>
-                                </div>
-                                <div className="flex-1 w-full">
-                                    <Input 
-                                        type="password" 
-                                        placeholder={
-                                            selectedModel.includes('gpt') ? "請輸入 OpenAI API Key" :
-                                            selectedModel.includes('grok') ? "請輸入 xAI API Key" :
-                                            selectedModel.includes('deepseek') ? "請輸入 DeepSeek API Key" :
-                                            selectedModel.includes('qwen') ? "請輸入 Alibaba DashScope API Key" :
-                                            "請輸入 Google AI Studio API Key (支援免費額度)"
-                                        }
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        className="bg-white"
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">選用不同模型需輸入對應廠商的 API Key。</p>
-                                </div>
-                            </div>
+                            )}
 
                             <div className="space-y-2">
                                 <Label htmlFor="generatedLetter">信函內容</Label>
@@ -337,6 +327,63 @@ export function InputForm() {
                     )}
                 </CardFooter>
             </Card>
+        </div>
+    )
+}
+
+function ModelSelectionPanel({ apiKey, setApiKey, selectedModel, setSelectedModel, availableModels }: any) {
+    return (
+        <div className="space-y-4 border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+            <h4 className="text-sm font-semibold text-slate-700">AI 模型設定</h4>
+            
+            {/* Model Selection */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
+                    <Server className="w-4 h-4" />
+                    <span>AI 模型:</span>
+                </div>
+                <div className="flex-1 w-full flex items-center gap-2">
+                        <Select value={selectedModel.replace('models/', '')} onValueChange={(v) => setSelectedModel(`models/${v}`)}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="選擇模型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="gemini-2.5-flash">Google Gemini 2.5 Flash</SelectItem>
+                            <SelectItem value="gemini-1.5-pro">Google Gemini 1.5 Pro</SelectItem>
+                            <SelectItem value="gpt-4o">OpenAI GPT-4o</SelectItem>
+                            <SelectItem value="gpt-4o-mini">OpenAI GPT-4o Mini</SelectItem>
+                            <SelectItem value="grok-beta">xAI Grok (Beta)</SelectItem>
+                            <SelectItem value="deepseek-chat">DeepSeek V3</SelectItem>
+                            <SelectItem value="qwen-max">Alibaba Qwen Max</SelectItem>
+                            <SelectItem value="qwen-plus">Alibaba Qwen Plus</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            
+            {/* API Key Input */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
+                    <Key className="w-4 h-4" />
+                    <span>API Key:</span>
+                </div>
+                <div className="flex-1 w-full">
+                    <Input 
+                        type="password" 
+                        placeholder={
+                            selectedModel.includes('gpt') ? "請輸入 OpenAI API Key" :
+                            selectedModel.includes('grok') ? "請輸入 xAI API Key" :
+                            selectedModel.includes('deepseek') ? "請輸入 DeepSeek API Key" :
+                            selectedModel.includes('qwen') ? "請輸入 Alibaba DashScope API Key" :
+                            "請輸入 Google AI Studio API Key (支援免費額度)"
+                        }
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="bg-white"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">選用不同模型需輸入對應廠商的 API Key (留空則嘗試使用伺服器預設值)。</p>
+                </div>
+            </div>
         </div>
     )
 }
