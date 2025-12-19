@@ -40,8 +40,17 @@ export const useLetterStore = create<LetterState>((set) => ({
   generatedLetter: '',
   tone: 'professional', // professional, bold, mild
   isGenerating: false,
-  availableModels: [],
-  selectedModel: 'models/gemini-2.5-pro', // Default
+  availableModels: [
+    'gemini-2.5-flash',
+    'gemini-1.5-pro',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'grok-beta',
+    'deepseek-chat',
+    'qwen-max',
+    'qwen-plus'
+  ],
+  selectedModel: 'gemini-2.5-flash', // Default updated per user request
   apiKey: '',
   additionalInstructions: '',
   isRawContent: false,

@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LegalLetter AI - 法律存證信函產生器
 
-## Getting Started
+專為台灣市場設計，結合 **AI 法律用語改寫** 與 **標準中華郵政 PDF 格式** 的現代化 Web 應用程式。
 
-First, run the development server:
+## 專案功能 (Features)
+
+1.  **AI 法律改寫引擎**:
+    *   使用 Google **Gemini 2.5 Flash** 模型 (Default)。
+    *   扮演具 20 年經驗的「台灣律師」角色，將口語輸入改寫為專業法律用語 (如：台端、本人、查、惟、茲、限)。
+    *   支援語氣調整 (專業、強硬、溫和)。
+
+2.  **標準中華郵政 PDF 生成**:
+    *   **嚴格網格排版**: 每頁 10 行 x 20 字 (10x20 Grid)。
+    *   **正確格式**: 精確的 A4 邊距、頁首/資訊區塊設計，以及標準頁尾 (含頁數、附件、騎縫章區)。
+    *   **字型支援**: 內建 **BiauKai (標楷體)**，確保輸出符合公文標準。
+
+3.  **無資料庫架構 (Privacy-First & Stateless)**:
+    *   專案設計為 **完全前端運作 (Client-Side State)**。
+    *   使用 `Zustand` 進行暫存狀態管理。
+    *   使用者輸入的資料僅存在於瀏覽器記憶體中，刷新即消失，不儲存任何個人隱私資料於伺服器。
+
+## 技術堆疊 (Tech Stack)
+
+*   **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
+*   **UI System**: [Shadcn/UI](https://ui.shadcn.com/) + Tailwind CSS
+*   **AI SDK**: [Vercel AI SDK](https://sdk.vercel.ai/docs) (`@ai-sdk/google`)
+*   **PDF Generation**: `@react-pdf/renderer`
+*   **State Management**: `zustand`
+
+## 快速開始 (Getting Started)
+
+### 1. 安裝相依套件
+
+```bash
+npm install
+```
+
+### 2. 環境變數設定
+
+本專案支援由使用者在前端輸入 API Key，或是由伺服器端預設 Key。
+若要設定伺服器端 Key，請建立 `.env.local`：
+
+```bash
+GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
+```
+
+### 3. 啟動開發伺服器
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+瀏覽器打開 [http://localhost:3000](http://localhost:3000) 即可使用。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 部署 (Deployment)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+本專案推薦部署至 **Vercel** (Free Tier)。
 
-## Learn More
+1.  將程式碼 Push 至 GitHub。
+2.  在 Vercel Dashboard 匯入專案。
+3.  (選用) 設定環境變數 `GOOGLE_GENERATIVE_AI_API_KEY`。
+4.  部署完成。
 
-To learn more about Next.js, take a look at the following resources:
+> 詳情請參考專案內的 `docs/vercel_deploy_guide.md` (若有)。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 授權 (License)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License

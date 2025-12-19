@@ -41,36 +41,10 @@ export function InputForm() {
     const [isDetecting, setIsDetecting] = useState(false);
 
     useEffect(() => {
-        // Auto detect on mount if empty AND we have a key (either in store or assumed env)
-        // Since we don't know if env key exists, we can try detecting.
-        if (availableModels.length === 0) {
-            detectModels();
-        }
+        // No auto-detect needed
     }, [])
 
-    const detectModels = async () => {
-        setIsDetecting(true);
-        try {
-            const res = await fetch('/api/check-models', {
-                method: 'POST',
-                body: JSON.stringify({ apiKey })
-            });
-            const data = await res.json();
-            if (data.models && Array.isArray(data.models)) {
-                setAvailableModels(data.models);
-                // Prefer gemini-2.5-pro if available
-                if (data.models.includes('gemini-2.5-pro')) {
-                    setSelectedModel('models/gemini-2.5-pro');
-                } else if (data.models.length > 0) {
-                     setSelectedModel(`models/${data.models[0]}`);
-                }
-            }
-        } catch (e) {
-            console.error("Failed to detect models", e);
-        } finally {
-            setIsDetecting(false);
-        }
-    }
+// detectModels removed as we use hardcoded lists now
 
     // We'll use a simple fetch for now to have more control or useCompletion if we want streaming
     // User requested "Refine" button.
@@ -269,6 +243,31 @@ export function InputForm() {
                                 </Button>
                             </div>
 
+                            {/* Model Selection */}
+                             <div className="flex flex-col sm:flex-row gap-4 items-center p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
+                                    <Server className="w-4 h-4" />
+                                    <span>AI 模型:</span>
+                                </div>
+                                <div className="flex-1 w-full flex items-center gap-2">
+                                     <Select value={selectedModel.replace('models/', '')} onValueChange={(v) => setSelectedModel(`models/${v}`)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="選擇模型" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="gemini-2.5-flash">Google Gemini 2.5 Flash</SelectItem>
+                                            <SelectItem value="gemini-1.5-pro">Google Gemini 1.5 Pro</SelectItem>
+                                            <SelectItem value="gpt-4o">OpenAI GPT-4o</SelectItem>
+                                            <SelectItem value="gpt-4o-mini">OpenAI GPT-4o Mini</SelectItem>
+                                            <SelectItem value="grok-beta">xAI Grok (Beta)</SelectItem>
+                                            <SelectItem value="deepseek-chat">DeepSeek V3</SelectItem>
+                                            <SelectItem value="qwen-max">Alibaba Qwen Max</SelectItem>
+                                            <SelectItem value="qwen-plus">Alibaba Qwen Plus</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            
                             {/* API Key Input */}
                              <div className="flex flex-col sm:flex-row gap-4 items-center p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
                                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
@@ -278,37 +277,18 @@ export function InputForm() {
                                 <div className="flex-1 w-full">
                                     <Input 
                                         type="password" 
-                                        placeholder="預設使用系統環境變數 (可在此覆蓋)" 
+                                        placeholder={
+                                            selectedModel.includes('gpt') ? "請輸入 OpenAI API Key" :
+                                            selectedModel.includes('grok') ? "請輸入 xAI API Key" :
+                                            selectedModel.includes('deepseek') ? "請輸入 DeepSeek API Key" :
+                                            selectedModel.includes('qwen') ? "請輸入 Alibaba DashScope API Key" :
+                                            "請輸入 Google AI Studio API Key (支援免費額度)"
+                                        }
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
                                         className="bg-white"
                                     />
-                                </div>
-                            </div>
-
-                            {/* Model Selection */}
-                             <div className="flex flex-col sm:flex-row gap-4 items-center p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 min-w-[100px]">
-                                    <Server className="w-4 h-4" />
-                                    <span>AI 模型:</span>
-                                </div>
-                                <div className="flex-1 w-full sm:w-auto flex gap-2">
-                                     <Select value={selectedModel.replace('models/', '')} onValueChange={(v) => setSelectedModel(`models/${v}`)}>
-                                        <SelectTrigger className="w-full sm:w-[250px]">
-                                            <SelectValue placeholder="選擇模型" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableModels.length > 0 ? availableModels.map(m => (
-                                                <SelectItem key={m} value={m}>{m}</SelectItem>
-                                            )) : <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (Default)</SelectItem>}
-                                        </SelectContent>
-                                    </Select>
-                                    <Button size="icon" variant="ghost" onClick={detectModels} disabled={isDetecting} title="重新偵測模型">
-                                        <Loader2 className={`w-4 h-4 ${isDetecting ? 'animate-spin' : ''}`} />
-                                    </Button>
-                                </div>
-                                <div className="text-xs text-slate-500">
-                                    目前使用: {selectedModel}
+                                    <p className="text-xs text-slate-500 mt-1">選用不同模型需輸入對應廠商的 API Key。</p>
                                 </div>
                             </div>
 

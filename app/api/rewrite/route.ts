@@ -93,20 +93,70 @@ The user has requested the following tone: "${tone}".
        // It's a server env key, safe to rely on default behavior OR explicit pass
     }
 
-    // Configure Provider
-    let googleProvider = google;
-    if (apiKey) {
-        // If client sends a key, we must create a new provider instance
-        const customGoogle = createGoogleGenerativeAI({
-            apiKey: apiKey
+    // Configure Provider based on Model Name
+    let languageModel;
+
+    // Detect provider based on model naming convention or selection
+    // We will stick to a convention: 'provider/model-name' or just 'model-name' (defaulting)
+    
+    // Normalize model name (remove 'models/' prefix from Gemini legacy if present)
+    const cleanModelName = modelName.startsWith('models/') ? modelName.replace('models/', '') : modelName;
+
+    if (cleanModelName.startsWith('gpt')) {
+        // OpenAI
+        const { createOpenAI } = require('@ai-sdk/openai');
+        const openai = createOpenAI({
+            apiKey: apiKey || process.env.OPENAI_API_KEY,
+            compatibility: 'strict', // Strict mode for official OpenAI
         });
-        googleProvider = customGoogle;
+        languageModel = openai(cleanModelName);
+
+    } else if (cleanModelName.startsWith('grok')) {
+        // xAI (Grok)
+        const { createOpenAI } = require('@ai-sdk/openai');
+        const xai = createOpenAI({
+            baseURL: 'https://api.x.ai/v1',
+            apiKey: apiKey || process.env.XAI_API_KEY,
+        });
+        languageModel = xai(cleanModelName);
+
+    } else if (cleanModelName.startsWith('deepseek')) {
+        // DeepSeek
+        const { createOpenAI } = require('@ai-sdk/openai');
+        const deepseek = createOpenAI({
+            baseURL: 'https://api.deepseek.com',
+            apiKey: apiKey || process.env.DEEPSEEK_API_KEY,
+        });
+        languageModel = deepseek(cleanModelName);
+
+    } else if (cleanModelName.startsWith('qwen')) {
+        // Alibaba Cloud (Qwen) - using DashScope compatible endpoint
+        const { createOpenAI } = require('@ai-sdk/openai');
+        const qwen = createOpenAI({
+            baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            apiKey: apiKey || process.env.DASHSCOPE_API_KEY,
+        });
+        languageModel = qwen(cleanModelName);
+
+    } else {
+        // Default to Google Gemini
+        // Handle 'gemini' prefix or default
+        let googleModelName = cleanModelName;
+        // If it accidentally came in as 'google/gemini...', strip 'google/'? 
+        // For now, assume cleanModelName is 'gemini-2.5-flash'.
+        
+        let googleProvider = google;
+        if (apiKey) {
+             const customGoogle = createGoogleGenerativeAI({
+                apiKey: apiKey
+            });
+            googleProvider = customGoogle;
+        }
+        languageModel = googleProvider(`models/${googleModelName}`);
     }
 
-    const finalModelName = modelName ? `models/${modelName.replace('models/', '')}` : 'models/gemini-2.5-pro';
-
     const { text } = await generateText({
-      model: googleProvider(finalModelName), 
+      model: languageModel, 
       system: systemPrompt,
       prompt: `Sender: ${senderName}\nReceiver: ${receiverName}\nCase Details: ${caseDetails}\n\nAdditional Instructions from User: ${additionalInstructions || "None"}`,
     });
